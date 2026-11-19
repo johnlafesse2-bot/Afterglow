@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11131b">
+  <title>Afterglow — party guest check-in</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="shell">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span> afterglow</div>
+    <div class="header-note">A smoother door starts here.</div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Your party, checked in</div>
+      <h1>Good nights.<br>Easy entry.</h1>
+      <p class="intro">Make a QR ticket for every guest, then scan it at the door. No paper list, no second guessing.</p>
+    </section>
+
+    <nav class="tabs" aria-label="Ticket tools">
+      <button class="tab" id="create-tab" type="button" role="tab" aria-selected="true" aria-controls="create-panel">＋ Create tickets</button>
+      <button class="tab" id="scan-tab" type="button" role="tab" aria-selected="false" aria-controls="scan-panel">⌗ Scan at the door</button>
+    </nav>
+
+    <section id="create-panel" role="tabpanel" aria-labelledby="create-tab">
+      <section class="card config-card" aria-labelledby="purpose-code-heading">
+        <div class="card-heading">
+          <div>
+            <h2 id="purpose-code-heading">Share a QR purpose code</h2>
+            <p class="subheading">An organizer can turn a reason into a hex code for guests to paste into their tickets.</p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="purpose-description">Reason for creating the QR ticket</label>
+          <input id="purpose-description" type="text" maxlength="256" placeholder="e.g. Entry for the Saturday charity dinner">
+        </div>
+        <div class="field">
+          <label for="event-ticket-limit">Maximum tickets for this event (optional)</label>
+          <input id="event-ticket-limit" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="e.g. 100">
+          <p class="field-hint">The limit counts every ticket already created for this event on this device, including checked-in tickets.</p>
+        </div>
+        <div class="config-actions">
+          <button class="secondary" id="generate-purpose-code" type="button">Generate share code</button>
+          <button class="quiet" id="copy-purpose-code" type="button" disabled>Copy code</button>
+        </div>
+        <label for="purpose-code-output">Share this hex code with ticket holders</label>
+        <input id="purpose-code-output" class="code-field" type="text" readonly placeholder="Your share code will appear here">
+        <p class="small-note">The code includes a unique event ID and optional ticket limit. It is not a password or secret. Ticket counts are local to the device creating the tickets; independent phones do not share a counter.</p>
+        <p class="status" id="purpose-code-status" role="status" aria-live="polite"></p>
+      </section>
+      <div class="workspace">
+        <form class="card form-card" id="ticket-form">
+          <div class="card-heading">
+            <div>
+              <h2>Create a guest ticket</h2>
+              <p class="subheading">Add the guest and event. Their ticket is ready in seconds.</p>
+            </div>
+            <span class="step" aria-hidden="true">01</span>
+          </div>
+          <div class="field">
+            <label for="guest-name">Guest name</label>
+            <input id="guest-name" name="guest" type="text" maxlength="80" placeholder="e.g. Alex Morgan" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="event-name">Party or event</label>
+            <input id="event-name" name="event" type="text" maxlength="80" placeholder="e.g. Saturday at The Loft" required>
+          </div>
+          <div class="field">
+            <label for="ticket-purpose-code">Purpose code (hex) · optional</label>
+            <input id="ticket-purpose-code" name="purposeCode" type="text" maxlength="1024" placeholder="Paste the code shared by the organizer" autocomplete="off" spellcheck="false">
+            <p class="field-hint" id="purpose-preview">No purpose code added.</p>
+          </div>
+          <button class="primary wide" type="submit">Generate QR ticket <span aria-hidden="true">↗</span></button>
+          <p class="small-note">Your guest list stays in this browser. Export it to share with door staff or use it on another device.</p>
+          <p class="status" id="create-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <section class="card ticket-card" aria-label="Generated ticket">
+          <div class="ticket-empty" id="ticket-empty">
+            <div class="qr-placeholder" aria-hidden="true">⌗</div>
+            <strong>Your ticket will show up here</strong>
+            <p>Fill in the guest and party details to create a scannable QR ticket.</p>
+          </div>
+          <div class="ticket-result" id="ticket-result">
+            <div class="ticket-event" id="ticket-event"></div>
+            <canvas id="ticket-qr" aria-label="Guest ticket QR code"></canvas>
+            <div class="ticket-name" id="ticket-name"></div>
+            <div class="ticket-id" id="ticket-id"></div>
+            <div class="ticket-actions">
+              <button class="secondary" id="download-qr" type="button">↓ Save QR</button>
+              <button class="quiet" id="print-ticket" type="button">Print</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="scan-panel" role="tabpanel" aria-labelledby="scan-tab" hidden>
+      <div class="scan-layout">
+        <section class="card scan-card">
+          <div class="card-heading">
+            <div>
+              <h2>Scan a guest ticket</h2>
+              <p class="subheading">Paste the event’s hex code, then scan a ticket to confirm it belongs to this event.</p>
+            </div>
+            <span class="step" aria-hidden="true">02</span>
+          </div>
+          <div class="field">
+            <label for="scan-purpose-code">Event code (hex)</label>
+            <input id="scan-purpose-code" type="text" maxlength="1024" placeholder="Paste the organizer’s event code" autocomplete="off" spellcheck="false">
+            <p class="field-hint" id="scan-purpose-preview">Enter the code shared for this event before scanning tickets.</p>
+          </div>
+          <div class="camera-frame" id="camera-frame">
+            <video id="camera-video" playsinline muted></video>
+            <div class="camera-placeholder" id="camera-placeholder">
+              <span aria-hidden="true">⌗</span>
+              Camera preview will appear here. Allow camera access when prompted.
+            </div>
+          </div>
+          <div class="scan-controls">
+            <button class="primary" id="start-camera" type="button">Start camera</button>
+            <button class="secondary" id="stop-camera" type="button" hidden>Stop camera</button>
+            <button class="secondary" id="import-qr-image" type="button">Import QR image</button>
+            <input class="file-input" id="qr-image-file" type="file" accept="image/*">
+          </div>
+          <p class="status" id="scan-status" role="status" aria-live="polite">Camera access requires HTTPS or localhost.</p>
+          <div class="scan-result" id="scan-result" role="status" aria-live="assertive" hidden>
+            <div class="result-label" id="result-label"></div>
+            <div class="result-title" id="result-title"></div>
+            <p class="result-details" id="result-details"></p>
+          </div>
+        </section>
+
+        <aside class="card roster-card">
+          <div class="card-heading">
+            <div>
+              <h2>Door list</h2>
+              <p class="subheading">Tickets saved on this device.</p>
+            </div>
+          </div>
+          <div class="roster-stats">
+            <div class="stat"><strong id="total-count">0</strong><span>tickets</span></div>
+            <div class="stat"><strong id="checked-count">0</strong><span>checked in</span></div>
+          </div>
+          <section class="history" aria-labelledby="history-heading">
+            <div class="history-heading">
+              <h3 id="history-heading">Scan history</h3>
+              <span id="history-count">0 scans</span>
+            </div>
+            <ol class="history-list" id="history-list"></ol>
+            <p class="history-empty" id="history-empty">Scanned QR codes will appear here.</p>
+          </section>
+          <div class="roster-actions">
+            <button class="secondary wide" id="export-list" type="button">↓ Export door list</button>
+            <button class="secondary wide" id="import-list" type="button">↑ Import door list</button>
+            <input class="file-input" id="import-file" type="file" accept=".json,application/json">
+          </div>
+          <p class="status" id="roster-status" role="status" aria-live="polite"></p>
+          <p class="privacy-note"><strong>Using another phone?</strong> Export the list after creating tickets, then import that file on the scanning device before doors open.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">A simple check-in helper for private events. Keep a backup of your exported door list.</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
